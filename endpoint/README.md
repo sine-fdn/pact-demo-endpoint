@@ -20,10 +20,10 @@ The following endpoints are available:
   - `/2/footprints` implementing the `ListFootprints` action
   - `/2/footprints/<footprint-id>` implementing the `GetFootprint` action
   - `/2/events` implementing the `Events` action
-  - `/2/auth/token` implementing `Authenticate` action
+  - `/auth/token` implementing `Authenticate` action
 - Additional endpoints are:
-  - `/2/.well-known/openid-configuration`: OpenId provider configuration document
-  - `/2/jwks`: the JSON Web Key Set used to encode and sign the authentication token
+  - `/.well-known/openid-configuration`: OpenId provider configuration document
+  - `/jwks`: the JSON Web Key Set used to encode and sign the authentication token
   - `/openapi.json`: OpenAPI description file which is automatically generated from the types defined in [`api_types.rs`](src/api_types.rs) and endpoints defined in [`main.rs`](src/main.rs)
   - Swagger UI: `/swagger-ui/` if you fancy a visualization
 

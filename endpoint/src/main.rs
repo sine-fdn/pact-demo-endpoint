@@ -58,13 +58,13 @@ const AUTH_PASSWORD: &str = "pathfinder";
 const API_URL: &str = "https://api.pathfinder.sine.dev";
 
 /// endpoint to retrieve the OpenId configuration document with the token_endpoint
-#[get("/2/.well-known/openid-configuration")]
+#[get("/.well-known/openid-configuration")]
 fn openid_configuration() -> Json<OpenIdConfiguration> {
     let openid_conf = OpenIdConfiguration {
-        token_endpoint: format!("{API_URL}/2/auth/token"),
+        token_endpoint: format!("{API_URL}/auth/token"),
         issuer: url::Url::parse(API_URL).unwrap(),
-        authorization_endpoint: format!("{API_URL}/2/auth/token"),
-        jwks_uri: format!("{API_URL}/2/jwks"),
+        authorization_endpoint: format!("{API_URL}/auth/token"),
+        jwks_uri: format!("{API_URL}/jwks"),
         response_types_supported: vec![format!("token")],
         subject_types_supported: vec![format!("public")],
         id_token_signing_alg_values_supported: vec![format!("RS256")],
@@ -73,7 +73,7 @@ fn openid_configuration() -> Json<OpenIdConfiguration> {
 }
 
 /// endpoint to retrieve the Json Web Key Set to verify the token's signature
-#[get("/2/jwks")]
+#[get("/jwks")]
 fn jwks(state: &State<KeyPair>) -> Json<JwkSet> {
     let pub_key = &state.pub_key;
 
@@ -107,6 +107,12 @@ fn oauth2_create_token(
     body: Form<auth::OAuth2ClientCredentialsBody<'_>>,
     state: &State<KeyPair>,
 ) -> Either<Json<auth::OAuth2TokenReply>, error::OAuth2ErrorMessage> {
+    if body.grant_type != "client_credentials" {
+        return Either::Right(error::OAuth2ErrorMessage {
+            error_description: "The grant type is not supported by this server",
+            error: "unsupported_grant_type",
+        });
+    }
     if req.id == AUTH_USERNAME && req.secret == AUTH_PASSWORD {
         let access_token =
             auth::encode_token(&auth::UserToken { username: req.id }, state).unwrap();
@@ -467,7 +473,7 @@ fn create_server(key_pair: KeyPair) -> rocket::Rocket<rocket::Build> {
         .mount("/", routes![index])
         .mount("/", routes![get_list, get_pcf_unauth, post_event_fallback])
         .mount("/", routes![openid_configuration, jwks])
-        .mount("/2/auth", routes![oauth2_create_token])
+        .mount("/auth", routes![oauth2_create_token])
         .mount(
             "/swagger-ui/",
             make_swagger_ui(&SwaggerUIConfig {
@@ -494,13 +500,13 @@ lazy_static! {
     static ref TEST_KEYPAIR: KeyPair = load_keys();
 }
 
-// tests the /v2/auth/token endpoint
+// tests the /auth/token endpoint
 #[test]
 fn post_auth_action_test() {
     use base64::engine::general_purpose::STANDARD;
     use std::collections::HashMap;
 
-    let auth_uri = "/2/auth/token";
+    let auth_uri = "/auth/token";
 
     let client = &Client::tracked(create_server(TEST_KEYPAIR.clone())).unwrap();
 
@@ -577,7 +583,7 @@ fn verify_token_signature_test() {
 
     let jwt = auth::encode_token(&token, key_pair).ok().unwrap();
 
-    let response = client.get("/2/jwks").dispatch();
+    let response = client.get("/jwks").dispatch();
 
     let jwks: JwkSet = response.into_json().unwrap();
 
