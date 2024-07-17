@@ -1038,7 +1038,7 @@
         "type": "oauth2",
         "flows": {
           "clientCredentials": {
-            "tokenUrl": "/2/auth/token",
+            "tokenUrl": "/auth/token",
             "scopes": {
               "footprint:list": "Ability to list footprints",
               "footprint:read": "Ability to access individual footprints"
